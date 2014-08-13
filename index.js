@@ -138,12 +138,12 @@ loader.load = function (value) {
     return value;
   }
 
-  var method = this[typeOf(value)];
+  var method = this['_' + typeOf(value)];
   if (method) {
     return method.apply(this, args);
   }
 
-  return this;
+  return null;
 };
 
 
@@ -198,7 +198,7 @@ loader.get = function (helper) {
  * @api private
  */
 
-loader.string = function (name, options) {
+loader._string = function (name, options) {
   var opts = extend({}, this.options, options);
   var helpers = boson(name, opts);
   this.load(helpers);
@@ -215,7 +215,7 @@ loader.string = function (name, options) {
  * @api private
  */
 
-loader.object = function (helper) {
+loader._object = function (helper) {
   _.extend.apply(_, [this.cache].concat(helper));
   return this;
 };
@@ -231,10 +231,10 @@ loader.object = function (helper) {
  * @api private
  */
 
-loader.function = function (fn) {
+loader._function = function (fn) {
   var helper = fn.call();
   if (typeOf(helper) === 'object') {
-    return helper;
+    return this._object(helper);
   }
   this.load(helper);
   return this;
@@ -250,7 +250,7 @@ loader.function = function (fn) {
  * @api private
  */
 
-loader.array = function (arr) {
+loader._array = function (arr) {
   _.unique(arr).forEach(function (helper) {
     return loader.load(helper);
   });
