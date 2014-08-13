@@ -110,18 +110,18 @@ loader.option = function(key, value) {
  *
  * // pass an object
  * loader.load({
- * 	a: function (str) {
- *   	return str;
+ *  a: function (str) {
+ *    return str;
  *   }
  * });
  *
  * // pass an array of objects
  * helper.load([{
  *   a: function (str) {
- *   	return str;
+ *    return str;
  *   },
  *   b: function (str) {
- *   	return str;
+ *    return str;
  *   }
  * }]);
  * ```
@@ -199,8 +199,8 @@ loader.get = function (helper) {
  */
 
 loader.string = function (name, options) {
-	var opts = extend({}, this.options, options);
-	var helpers = boson(name, opts);
+  var opts = extend({}, this.options, options);
+  var helpers = boson(name, opts);
   this.load(helpers);
   return this;
 };
@@ -216,7 +216,7 @@ loader.string = function (name, options) {
  */
 
 loader.object = function (helper) {
-	_.extend.apply(_, [this.cache].concat(helper));
+  _.extend.apply(_, [this.cache].concat(helper));
   return this;
 };
 
