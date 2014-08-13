@@ -7,25 +7,22 @@
 var _ = require('lodash');
 var boson = require('boson');
 var debug = require('debug')('helpers-loader');
-var utils = require('./utils');
 var extend = _.extend;
 
 
 /**
- * ## Loader
- *
  * Create a new instance of `Loader`, optionally
  * passing default `options`.
  *
  * **Example:**
  *
  * ```js
- * var Loader = require('template-loader');
- * var templates = new Loader();
+ * var Loader = require('helper-loader');
+ * var helpers = new Loader();
  * ```
  *
  * @class `Loader`
- * @param {Object} `options` Default options for front-matter and template naming.
+ * @param {Object} `options` Default options for front-matter and helper naming.
  * @api public
  */
 
@@ -45,7 +42,7 @@ loader.options = {};
 
 
 /**
- * Template cache
+ * Helper cache
  *
  * @type {Object}
  */
@@ -61,44 +58,12 @@ loader.cache = {};
 
 loader.init = function(opts) {
   debug('init', arguments);
-  loader.options = {};
-  loader.cache = {};
-
-  loader.extend(opts);
-  loader.fallback('rename', utils.rename);
-  loader.fallback('cwd', process.cwd());
-  loader.fallback('helpers', {});
+  this.options = opts || {};
+  this.cache = {};
 };
 
 
 /**
- * Fallback on default options if
- * they are not defined by the user.
- *
- * @api private
- */
-
-loader.fallback = function(key, value) {
-  return loader.options[key] ?
-    loader.option(key) :
-    loader.option(key, value);
-};
-
-
-/**
- * Extend the options.
- *
- * @api private
- */
-
-loader.extend = function(obj) {
-  return _.extend(loader.options, obj);
-};
-
-
-/**
- * ## .option
- *
  * Set or get an option.
  *
  * ```js
@@ -108,8 +73,8 @@ loader.extend = function(obj) {
  * ```
  *
  * @method option
- * @param {String} `key`
- * @param {*} `value`
+ * @param {String} `key` The name of the option.
+ * @param {*} `value` The value to assign.
  * @return {*}
  * @api public
  */
@@ -118,24 +83,51 @@ loader.option = function(key, value) {
   var args = [].slice.call(arguments);
 
   if (args.length === 1 && typeof key === 'string') {
-    return loader.options[key];
+    return this.options[key];
   }
 
   if (typeof key === 'object') {
-    _.extend.apply(_, [loader.options].concat(args));
-    return loader;
+    extend.apply(_, [this.options].concat(args));
+    return this;
   }
 
-  loader.options[key] = value;
-  return loader;
+  this.options[key] = value;
+  return this;
 };
 
 
 /**
- * Resolve and load helpers defined on the config.
+ * Resolve and load helpers onto the cache.
  *
- * @param  {Object} `options`
- * @return {[type]}
+ * ```js
+ * // require a helper
+ * loader.load(require('foo'));
+ *
+ * // Pass a string or array of file paths or glob patterns
+ * loader.load('a.js');
+ * loader.load(['a.js', 'b.js', 'c.js']);
+ * loader.load(['*.js']);
+ *
+ * // pass an object
+ * loader.load({
+ * 	a: function (str) {
+ *   	return str;
+ *   }
+ * });
+ *
+ * // pass an array of objects
+ * helper.load([{
+ *   a: function (str) {
+ *   	return str;
+ *   },
+ *   b: function (str) {
+ *   	return str;
+ *   }
+ * }]);
+ * ```
+ *
+ * @return {Object} `loader`
+ * @api public
  */
 
 loader.load = function (value) {
@@ -146,96 +138,86 @@ loader.load = function (value) {
     return value;
   }
 
-  var method = loader[utils.typeOf(value)];
+  var method = this[typeOf(value)];
   if (method) {
-    return method.apply(loader, args);
+    return method.apply(this, args);
   }
-  return {};
+
+  return this;
 };
 
 
 /**
- * Set templates on the cache.
+ * Store a `helper` on the cache by `name`.
  *
- * @param  {String} `name` Template name
- * @param  {String} `str` String to parse.
- * @param  {Object} `options` loader options
+ * ```js
+ * loader.set('foo', function(str) {
+ *   return str;
+ * })
+ * ```
+ *
+ * @param  {String} `name` Helper name
+ * @param  {String} `helper` File path, glob pattern or object.
  * @api public
  */
 
-loader.set = function (name, str, options) {
+loader.set = function (name, helper) {
   var o = {};
-  if (utils.typeOf(str) === 'string') {
-    o[name] = {
-      content: str
-    };
-  } else {
-    o[name] = str;
-  }
-  loader.object(o, options);
-  return loader;
+  o[name] = helper;
+  this.load(o);
+  return this;
 };
 
 
 /**
- * Get a template from the cache.
+ * Get `helper` from the cache.
  *
- * @param  {String} `key` The name of the template to get.
+ * ```js
+ * loader.get('foo')
+ * //=> [function]
+ * ```
+ *
+ * @param  {String} `helper` The name of the helper to get.
  * @api public
  */
 
-loader.get = function (key) {
-  if (!key) {
-    return loader.cache;
+loader.get = function (helper) {
+  if (!helper) {
+    return this.cache;
   }
-  return loader.cache[key];
+  return this.cache[helper];
 };
 
 
 /**
- * Resolve the `name`d npm module name, filepath or glob pattern, passing
+ * Resolve an npm module by `name`, filepath or glob pattern, passing
  * the results to `loader.load()`.
  *
- * @method `string`
- * @param {String} `name` NPM module name, file path or glob pattern to resolve.
- * @return {Object} object of key/value helper pairs.
+ * @param {String} `name` The npm module name, file path or glob pattern to resolve.
+ * @return {Object} `loader`
  * @api private
  */
 
-loader.string = function (str) {
-  var resolved = boson(str);
-  var o = {};
-
-  resolved.forEach(function (filepath) {
-    try {
-      var helper = require(filepath);
-      if (utils.typeOf(helper) === 'object') {
-        extend(o, helper);
-      } else {
-        extend(o, loader.load(helper));
-      }
-    } catch(err) {
-      return err;
-    }
-  });
-
-  _.extend.apply(_, [loader.cache].concat(o));
-  return o;
+loader.string = function (name, options) {
+	var opts = extend({}, this.options, options);
+	var helpers = boson(name, opts);
+  this.load(helpers);
+  return this;
 };
 
 
 /**
- * noop, just return the `helper` object.
+ * Extend the given object onto the `cache`.
  *
  * @method `object`
  * @param {Object} `helper` A helper object.
- * @param {Object} object of key/value helper pairs.
+ * @param {Object} `loader`
  * @api private
  */
 
 loader.object = function (helper) {
-	_.extend.apply(_, [loader.cache].concat(helper));
-  return helper;
+	_.extend.apply(_, [this.cache].concat(helper));
+  return this;
 };
 
 
@@ -245,16 +227,17 @@ loader.object = function (helper) {
  *
  * @method `function`
  * @param {Function} `fn`
- * @return {Object} object of key/value helper pairs.
+ * @return {Object} `loader`
  * @api private
  */
 
 loader.function = function (fn) {
   var helper = fn.call();
-  if (utils.typeOf(helper) === 'object') {
+  if (typeOf(helper) === 'object') {
     return helper;
   }
-  return loader.load(helper);
+  this.load(helper);
+  return this;
 };
 
 
@@ -263,18 +246,30 @@ loader.function = function (fn) {
  *
  * @method `array`
  * @param {Array} `arr`
- * @return {Object} object of key/value helper pairs.
+ * @return {Object} `loader`
  * @api private
  */
 
 loader.array = function (arr) {
-  var o = {};
   _.unique(arr).forEach(function (helper) {
-    extend(o, loader.load(helper));
+    return loader.load(helper);
   });
-  _.extend.apply(_, [loader.cache].concat(o));
-  return o;
+  return this;
 };
+
+
+/**
+ * Utility method
+ *
+ * @api private
+ */
+
+function typeOf(value) {
+  return Object.prototype.toString.call(value)
+    .toLowerCase()
+    .replace(/\[object ([\S]+)\]/, '$1');
+}
+
 
 
 /**

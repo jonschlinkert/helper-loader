@@ -12,14 +12,25 @@ var loader = require('..');
 
 describe('helper load:', function () {
   describe('.load():', function () {
-    it('should load helpers when the name is defined as a string:', function () {
+
+    it('should load required helpers:', function () {
       var helpers = loader();
-      helpers.load('a', function (str) {
-      	return str;
-      });
+
+      helpers.load(require('./fixtures/obj/a.js'));
+
+      helpers.load(require('node-foo'));
+      helpers.load(require('node-bar'));
+      helpers.load(require('node-baz')({}));
 
       var a = helpers.get('a');
-      assert(typeof a, 'function');
+      var foo = helpers.get('foo_aaa');
+      var bar = helpers.get('bar_aaa');
+      var baz = helpers.get('baz_aaa');
+
+      assert.equal(typeof a, 'function');
+      assert.equal(typeof foo, 'function');
+      assert.equal(typeof bar, 'function');
+      assert.equal(typeof baz, 'function');
     });
 
     it('should load helpers defined as an object:', function () {
@@ -31,10 +42,10 @@ describe('helper load:', function () {
       });
 
       var a = helpers.get('a');
-      assert(typeof a, 'function');
+      assert.equal(typeof a, 'function');
     });
 
-    it('should load multiple helpers onto the `cache` object.', function () {
+    it('should load multiple helpers defined as objects.', function () {
       var helper = loader();
       helper.load({
         a: function (str) {
@@ -55,80 +66,82 @@ describe('helper load:', function () {
       cache.should.have.length(4);
     });
 
-    it('should load helpers from arrays of file paths', function () {
+    it('should load an array of helpers.', function () {
+      var helper = loader();
+      helper.load([{
+        a: function (str) {
+        	return str;
+        },
+        b: function (str) {
+        	return str;
+        },
+        c: function (str) {
+        	return str;
+        },
+        d: function (str) {
+        	return str;
+        }
+      }]);
+
+      var cache = Object.keys(helper.cache);
+      cache.should.have.length(4);
+    });
+
+    it('should load helper objects defined as file paths:', function () {
       var helpers = loader();
-      helpers.load(['test/fixtures/a.js', 'test/fixtures/b.js', 'test/fixtures/c.js']);
+      helpers.load('test/fixtures/obj/a.js');
+
+      var a = helpers.get('a');
+      assert.equal(typeof a, 'function');
+    });
+
+    it('should load helper objects defined as an array of file paths:', function () {
+      var helpers = loader();
+      helpers.load(['test/fixtures/obj/a.js', 'test/fixtures/obj/b.js', 'test/fixtures/obj/c.js']);
 
       var a = helpers.get('a');
       var b = helpers.get('b');
-      var c = helpers.get('d');
+      var c = helpers.get('c');
 
-      assert(typeof a, 'function');
-      assert(typeof b, 'function');
-      assert(typeof c, 'function');
+      assert.equal(typeof a, 'function');
+      assert.equal(typeof b, 'function');
+      assert.equal(typeof c, 'function');
     });
 
-    // describe('when helper are defined as functions:', function () {
+    it('should load helper objects defined as an array of glob patterns:', function () {
+      var helpers = loader();
+      helpers.load(['test/fixtures/obj/*.js']);
 
-    //   it('should load multiple helpers from functions:', function () {
-    //     var helpers = loader();
-    //     helpers.load({a: {layout: 'b', content: 'A above\n{{body}}\nA below' }});
-    //     helpers.load({b: {layout: 'c', content: 'B above\n{{body}}\nB below' }});
-    //     helpers.load({c: {layout: 'd', content: 'C above\n{{body}}\nC below' }});
+      var a = helpers.get('a');
+      var b = helpers.get('b');
+      var c = helpers.get('c');
 
-    //     var a = helpers.get('a');
-    //     var b = helpers.get('b');
-    //     var c = helpers.get('d');
+      assert.equal(typeof a, 'function');
+      assert.equal(typeof b, 'function');
+      assert.equal(typeof c, 'function');
+    });
 
-    //     assert(typeof a, 'function');
-    //   });
+    it('should load helper objects defined as a string of glob patterns:', function () {
+      var helpers = loader();
+      helpers.load('test/fixtures/obj/*.js');
 
-    //   it('should load helpers from strings', function () {
-    //     var helpers = loader();
-    //     helpers.load('a', 'A above\n{{body}}\nA below', {layout: 'b'});
-    //     helpers.load('b', 'B above\n{{body}}\nB below', {layout: 'c'});
-    //     helpers.load('c', 'C above\n{{body}}\nC below', {layout: 'd'});
+      var a = helpers.get('a');
+      var b = helpers.get('b');
+      var c = helpers.get('c');
 
-    //     var a = helpers.get('a');
-    //     var b = helpers.get('b');
-    //     var c = helpers.get('d');
-    //     assert(typeof a, 'function');
-    //     assert(typeof b, 'function');
-    //     assert(typeof c, 'function');
-    //   });
+      assert.equal(typeof a, 'function');
+      assert.equal(typeof b, 'function');
+      assert.equal(typeof c, 'function');
+    });
 
-    //   it('should load helpers from file paths', function () {
-    //     var helpers = loader();
-    //     helpers.load('test/fixtures/a.tmpl', {layout: 'b'});
-    //     var a = helpers.get('a');
-    //     assert(typeof a, 'function');
-    //   });
+    it('should return wrapped helpers.', function () {
+      var helpers = loader();
+      helpers.load(__dirname + '/fixtures/wrapped/*.js');
 
+      var a = helpers.get('wrapped');
+      assert.equal(typeof a, 'function');
+    });
 
-    //   it('should load helpers from globs', function () {
-    //     var helpers = loader();
-    //     helpers.load('test/fixtures/*.tmpl');
-
-    //     helpers.cache.should.have.property('a');
-    //     helpers.cache.should.have.property('b');
-    //     helpers.cache.should.have.property('c');
-    //     helpers.cache.should.have.property('d');
-    //     helpers.cache.should.have.property('e');
-    //     helpers.cache.should.have.property('f');
-    //   });
-
-    //   it('should load helpers from arrays of globs', function () {
-    //     var helpers = loader();
-    //     helpers.load(['test/**/*.md', 'test/**/*.tmpl']);
-
-    //     helpers.cache.should.have.property('a');
-    //     helpers.cache.should.have.property('b');
-    //     helpers.cache.should.have.property('c');
-    //     helpers.cache.should.have.property('d');
-    //     helpers.cache.should.have.property('e');
-    //     helpers.cache.should.have.property('f');
-    //   });
-
-    // });
   });
+
 });
