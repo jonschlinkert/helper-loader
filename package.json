@@ -10,6 +10,10 @@
   "bugs": {
     "url": "https://github.com/assemble/helper-loader/issues"
   },
+  "author": {
+    "name": "Jon Schlinkert",
+    "url": "https://github.com/jonschlinkert"
+  },
   "maintainers": [
     {
       "name": "Jon Schlinkert",
