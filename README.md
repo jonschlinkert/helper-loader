@@ -1,6 +1,6 @@
 # helper-loader [![NPM version](https://badge.fury.io/js/helper-loader.png)](http://badge.fury.io/js/helper-loader)
 
-> Load helpers from file paths, globs or objects, and cache them as normalized objects.
+> Load template engine helpers (handlebars, lo-dash, etc) from file paths, globs, arrays or objects.
 
 ## Install
 #### Install with [npm](npmjs.org):
@@ -17,7 +17,7 @@ var helpers = new Loader();
 ```
 
 ## API
-### [loader](index.js#L30)
+### [loader](index.js#L29)
 
 Create a new instance of `Loader`, optionally passing default `options`.
 
@@ -31,7 +31,7 @@ var helpers = new Loader();
 ```
 
 
-### [.option](index.js#L94)
+### [.option](index.js#L82)
 
 Set or get an option.
 
@@ -46,7 +46,7 @@ loader.option('a')
 ```
 
 
-### [.load](index.js#L145)
+### [.load](index.js#L133)
 
 Resolve and load helpers onto the cache.
 
@@ -80,7 +80,7 @@ helper.load([{
 ```
 
 
-### [.set](index.js#L176)
+### [.set](index.js#L164)
 
 Store a `helper` on the cache by `name`.
 
@@ -94,7 +94,7 @@ loader.set('foo', function(str) {
 ```
 
 
-### [.get](index.js#L196)
+### [.get](index.js#L184)
 
 Get `helper` from the cache.
 
